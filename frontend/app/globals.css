@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------
+   FlowLedger Design Tokens
+   Tailwind v4 CSS-first configuration
+------------------------------------------------------- */
+
+@theme {
+  /* Color palette */
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+
+  /* Text */
+  --color-text: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+
+  /* Primary teal */
+  --color-primary: #0f766e;
+  --color-primary-hover: #115e59;
+  --color-primary-soft: #ccfbf1;
+  --color-focus: #0d9488;
+
+  /* Status colors — foreground */
+  --color-status-draft-fg: #475569;
+  --color-status-pending-fg: #92400e;
+  --color-status-approved-fg: #166534;
+  --color-status-rejected-fg: #991b1b;
+  --color-status-cancelled-fg: #475569;
+
+  /* Status colors — background */
+  --color-status-draft-bg: #f1f5f9;
+  --color-status-pending-bg: #fef3c7;
+  --color-status-approved-bg: #dcfce7;
+  --color-status-rejected-bg: #fee2e2;
+  --color-status-cancelled-bg: #e2e8f0;
+
+  /* Info / error */
+  --color-info-fg: #1d4ed8;
+  --color-info-bg: #dbeafe;
+  --color-error-fg: #991b1b;
+  --color-error-bg: #fee2e2;
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.12);
+  --shadow-dialog: 0 8px 32px 0 rgb(0 0 0 / 0.14);
+}
+
+/* -------------------------------------------------------
+   Base styles
+------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* -------------------------------------------------------
+   Focus styles
+------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------
+   Typography utilities
+------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+/* -------------------------------------------------------
+   Reduced-motion preference
+------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -------------------------------------------------------
+   Scrollbar (optional refinement)
+------------------------------------------------------- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
