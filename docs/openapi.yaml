@@ -1,0 +1,776 @@
+openapi: 3.1.0
+info:
+  title: FlowLedger API
+  description: Modern Invoice Intake, Approval Workflow, and Audit Platform for Ethiopian SMEs.
+  version: 1.0.0
+  contact:
+    name: FlowLedger Engineering Team
+    email: support@flowledger.et
+servers:
+  - url: http://localhost:8082
+    description: Local Spring Boot Backend
+  - url: http://localhost:3000/api
+    description: Next.js API Gateway / Proxy
+
+paths:
+  /actuator/health:
+    get:
+      summary: Health check endpoint
+      description: Returns service and database operational status.
+      responses:
+        "200":
+          description: Service is healthy and connected to database.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+
+  /api/v1/auth/login:
+    post:
+      summary: User Login
+      description: Authenticates user credentials and issues an HS256 JWT in an HttpOnly cookie and JSON response body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: Authentication successful.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: access_token=eyJhbGci...; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/auth/logout:
+    post:
+      summary: User Logout
+      description: Clears and expires the access_token session cookie.
+      responses:
+        "200":
+          description: Logged out successfully.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: access_token=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+
+  /api/v1/me:
+    get:
+      summary: Get Current Session
+      description: Returns identity, active organization, and permissions for the authenticated caller.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Current user profile and organizational context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/invoices:
+    get:
+      summary: List Invoices
+      description: Search, filter, and paginate through tenant invoices.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, CANCELLED, ALL]
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Case-insensitive search on supplier name or invoice number
+        - name: fromDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            default: createdAt
+        - name: sortDirection
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Paginated invoices result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResultInvoice'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create Draft Invoice
+      description: Creates an invoice in DRAFT status and logs CREATED_DRAFT activity.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceInput'
+      responses:
+        "201":
+          description: Draft invoice created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/invoices/submit:
+    post:
+      summary: Create and Submit Invoice
+      description: Creates a new invoice and directly transitions it to PENDING_APPROVAL status.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceInput'
+      responses:
+        "201":
+          description: Invoice created and submitted for approval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/invoices/{id}:
+    get:
+      summary: Get Invoice by ID
+      description: Retrieves invoice details and chronological activity audit trail.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Invoice retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Update Draft Invoice
+      description: Updates fields of an existing invoice in DRAFT or REJECTED status.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInvoiceInput'
+      responses:
+        "200":
+          description: Invoice updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/invoices/{id}/submit:
+    post:
+      summary: Submit Draft for Approval
+      description: Transitions an existing DRAFT or REJECTED invoice to PENDING_APPROVAL.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Invoice submitted for approval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/invoices/check-duplicate:
+    get:
+      summary: Check Duplicate Invoice Number
+      description: Verifies whether an invoice number already exists in the tenant's organization.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: invoiceNumber
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: excludeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Duplicate check result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateCheckResponse'
+
+  /api/v1/invoices/summary:
+    get:
+      summary: Dashboard Summary Metrics
+      description: Computes aggregate invoice counts and returns recent invoice lists.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Organizational summary metrics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummaryResponse'
+
+  /api/v1/approvals/pending:
+    get:
+      summary: List Pending Approvals
+      description: Returns the queue of invoices currently in PENDING_APPROVAL status.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Queue of pending invoices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResultInvoice'
+
+  /api/v1/approvals/{id}/approve:
+    post:
+      summary: Approve Invoice
+      description: Transitions invoice from PENDING_APPROVAL to APPROVED and logs audit record.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Invoice approved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "403":
+          $ref: '#/components/responses/ForbiddenError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/approvals/{id}/reject:
+    post:
+      summary: Reject Invoice
+      description: Transitions invoice from PENDING_APPROVAL to REJECTED with a mandatory reason.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectInvoiceRequest'
+      responses:
+        "200":
+          description: Invoice rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "403":
+          $ref: '#/components/responses/ForbiddenError'
+        "404":
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/organizations/team:
+    get:
+      summary: List Organization Team Members
+      description: Returns active users and roles within the caller's tenant organization.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: List of team members.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMemberResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter JWT Bearer token
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Browser HttpOnly session cookie
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: abebe@acme.co
+        password:
+          type: string
+          format: password
+          example: password
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          example: 86400
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        organization:
+          $ref: '#/components/schemas/OrganizationSummary'
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        fullName:
+          type: string
+
+    OrganizationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum: [OWNER, ADMIN, FINANCE, APPROVER, VIEWER]
+
+    SessionResponse:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+        organization:
+          $ref: '#/components/schemas/OrganizationSummary'
+        permissions:
+          type: array
+          items:
+            type: string
+
+    CreateInvoiceInput:
+      type: object
+      required:
+        - supplierName
+        - invoiceNumber
+        - invoiceDate
+        - amount
+      properties:
+        supplierName:
+          type: string
+          example: Ethio Telecom
+        invoiceNumber:
+          type: string
+          example: ET-2026-001
+        amount:
+          type: string
+          example: "14500.50"
+        currency:
+          type: string
+          default: ETB
+          example: ETB
+        invoiceDate:
+          type: string
+          format: date
+          example: "2026-11-01"
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-11-15"
+        description:
+          type: string
+          nullable: true
+          example: Monthly dedicated internet connection
+
+    UpdateInvoiceInput:
+      type: object
+      properties:
+        supplierName:
+          type: string
+        invoiceNumber:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+        invoiceDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        description:
+          type: string
+
+    RejectInvoiceRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          example: Discrepancy in unit price and quantity
+
+    InvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        supplierName:
+          type: string
+        invoiceNumber:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+        invoiceDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, CANCELLED]
+        rejectionReason:
+          type: string
+          nullable: true
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceActivityResponse'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InvoiceActivityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          example: SUBMITTED
+        description:
+          type: string
+          example: Submitted for approval
+        actorName:
+          type: string
+          nullable: true
+          example: Abebe Girma
+        occurredAt:
+          type: string
+          format: date-time
+
+    PageResultInvoice:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceResponse'
+        page:
+          type: integer
+          example: 1
+        size:
+          type: integer
+          example: 10
+        totalItems:
+          type: integer
+          example: 25
+        totalPages:
+          type: integer
+          example: 3
+
+    DuplicateCheckResponse:
+      type: object
+      properties:
+        invoiceNumber:
+          type: string
+        duplicate:
+          type: boolean
+
+    DashboardSummaryResponse:
+      type: object
+      properties:
+        totalInvoices:
+          type: integer
+        pendingApprovals:
+          type: integer
+        approvedInvoices:
+          type: integer
+        rejectedInvoices:
+          type: integer
+        draftInvoices:
+          type: integer
+        recentInvoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceResponse'
+        pendingApprovalInvoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceResponse'
+
+    TeamMemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        role:
+          type: string
+          enum: [OWNER, ADMIN, FINANCE, APPROVER, VIEWER]
+        status:
+          type: string
+          enum: [ACTIVE, INVITED, SUSPENDED]
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Validation failed
+        path:
+          type: string
+          example: /api/v1/invoices
+
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or body.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnauthorizedError:
+      description: Missing, invalid, or expired authentication token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ForbiddenError:
+      description: Caller lacks required organizational authority or role.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
