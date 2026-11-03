@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { FormField, Input } from "@/components/ui/Input";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { signIn } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +26,7 @@ export default function SignInPage() {
     return next;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const validation = validate();
     if (Object.keys(validation).length > 0) {
@@ -33,11 +36,22 @@ export default function SignInPage() {
     setErrors({});
     setLoading(true);
 
-    // Prototype: accept any non-empty credentials
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await signIn(email, password);
       router.push("/dashboard");
-    }, 1000);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Invalid email or password. Please try again.";
+      setErrors({ form: message });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function fillDemoCredentials() {
+    setEmail("abebe@acme.co");
+    setPassword("password");
+    setErrors({});
   }
 
   return (
@@ -60,9 +74,18 @@ export default function SignInPage() {
           Enter your credentials to access your workspace.
         </p>
 
-        {/* Prototype notice */}
-        <div className="mb-5 rounded-lg bg-[#fef3c7] border border-[#fde68a] px-3 py-2.5 text-xs text-[#92400e]">
-          <strong>Prototype:</strong> Enter any email and password to continue.
+        {/* Demo credentials hint */}
+        <div className="mb-5 rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] px-3 py-2.5 text-xs text-[#166534]">
+          <div className="flex items-center justify-between">
+            <span><strong>Demo account:</strong> abebe@acme.co / password</span>
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="ml-2 font-semibold underline text-[#0f766e] hover:text-[#115e59]"
+            >
+              Fill
+            </button>
+          </div>
         </div>
 
         {errors.form && (

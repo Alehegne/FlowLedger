@@ -31,6 +31,8 @@ export interface Invoice {
   dueDate: string | null;
   description: string | null;
   status: InvoiceStatus;
+  rejectionReason?: string | null;
+  activities?: InvoiceActivity[];
   createdAt: string;
   updatedAt: string;
 }
@@ -112,6 +114,16 @@ export interface CreateInvoiceInput {
   amount: string;
   currency: string;
   invoiceDate: string;
+  dueDate?: string | null;
+  description?: string | null;
+}
+
+export interface UpdateInvoiceInput {
+  supplierName?: string;
+  invoiceNumber?: string;
+  amount?: string;
+  currency?: string;
+  invoiceDate?: string;
   dueDate?: string | null;
   description?: string | null;
 }

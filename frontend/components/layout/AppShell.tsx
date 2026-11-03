@@ -4,6 +4,8 @@ import React, { useState, Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { usePendingApprovalsCount } from "@/services/mock/useInvoiceStore";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -12,22 +14,19 @@ export interface AppShellProps {
 
 /**
  * Authenticated application shell.
- *
- * Desktop (lg+):  persistent left sidebar + top header
- * Tablet/mobile:  collapsible drawer navigation triggered from header
- *
- * All client-router hook components are wrapped in <Suspense> so that
- * server-rendered pages with dynamic params can still prerender.
+ * Desktop (lg+): persistent left sidebar + top header
+ * Tablet/mobile: collapsible drawer navigation triggered from header
  */
 export function AppShell({ children, pageTitle }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pendingApprovalsCount = usePendingApprovalsCount();
+  const { session: authSession } = useAuth();
 
-  // Prototype session — swap with real session context in production
   const session = {
-    userName: "Abebe Girma",
-    userEmail: "abebe@acme.co",
-    organizationName: "Acme Trading Co.",
-    pendingApprovals: 3,
+    userName: authSession?.user.name || "Abebe Girma",
+    userEmail: authSession?.user.email || "abebe@acme.co",
+    organizationName: authSession?.organization.name || "Acme Trading Co.",
+    pendingApprovals: pendingApprovalsCount,
   };
 
   return (

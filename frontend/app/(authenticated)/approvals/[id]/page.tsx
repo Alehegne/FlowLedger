@@ -3,26 +3,33 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { MOCK_INVOICES } from "@/lib/mock/fixtures";
 import { PageHeader, Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { FormField, Textarea } from "@/components/ui/Input";
 import { NotFoundState } from "@/components/ui/States";
-import { ArrowLeftIcon, CheckIcon, AlertCircleIcon } from "@/components/ui/Icons";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  AlertCircleIcon,
+} from "@/components/ui/Icons";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { useInvoice } from "@/services/mock/useInvoiceStore";
+import { approvalService } from "@/services";
+import { validateRejectionReason } from "@/lib/utils/validation";
 
 type DialogState = "none" | "approve" | "reject";
 
 export default function ApprovalReviewPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const invoice = MOCK_INVOICES.find((i) => i.id === params.id);
+  const invoice = useInvoice(params.id);
 
   const [dialog, setDialog] = useState<DialogState>("none");
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [decision, setDecision] = useState<"approved" | "rejected" | null>(null);
 
   if (!invoice) {
@@ -36,6 +43,48 @@ export default function ApprovalReviewPage() {
     );
   }
 
+  // If already decided during this view
+  if (decision) {
+    return (
+      <div className="max-w-lg mx-auto mt-16 text-center flex flex-col items-center gap-4">
+        <div
+          className={`w-14 h-14 rounded-full flex items-center justify-center ${
+            decision === "approved" ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
+          }`}
+        >
+          {decision === "approved" ? (
+            <CheckIcon size={28} className="text-[#166534]" />
+          ) : (
+            <AlertCircleIcon size={28} className="text-[#991b1b]" />
+          )}
+        </div>
+        <h2 className="text-xl font-bold text-[#0f172a]">
+          Invoice {decision === "approved" ? "Approved" : "Rejected"}
+        </h2>
+        <p className="text-sm text-[#475569]">
+          <strong>{invoice.supplierName}</strong> &middot;{" "}
+          {invoice.invoiceNumber}
+          <br />
+          <span className="text-xs text-[#0f766e]">
+            Decision recorded in store &mdash; queues and metrics updated
+          </span>
+        </p>
+        <div className="flex gap-3 mt-2">
+          <Link href="/approvals">
+            <Button variant="primary">Back to Approvals</Button>
+          </Link>
+          <Link href={`/invoices/${invoice.id}`}>
+            <Button variant="outline">View Invoice</Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button variant="ghost">Dashboard</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If invoice is already in a non-pending status
   if (invoice.status !== "PENDING_APPROVAL") {
     return (
       <div className="max-w-2xl flex flex-col gap-6">
@@ -65,64 +114,45 @@ export default function ApprovalReviewPage() {
     );
   }
 
-  if (decision) {
-    return (
-      <div className="max-w-lg mx-auto mt-16 text-center flex flex-col items-center gap-4">
-        <div
-          className={`w-14 h-14 rounded-full flex items-center justify-center ${
-            decision === "approved" ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
-          }`}
-        >
-          {decision === "approved" ? (
-            <CheckIcon size={28} className="text-[#166534]" />
-          ) : (
-            <AlertCircleIcon size={28} className="text-[#991b1b]" />
-          )}
-        </div>
-        <h2 className="text-xl font-bold text-[#0f172a]">
-          Invoice {decision === "approved" ? "Approved" : "Rejected"}
-        </h2>
-        <p className="text-sm text-[#475569]">
-          <strong>{invoice.supplierName}</strong> &middot;{" "}
-          {invoice.invoiceNumber}
-          <br />
-          <span className="text-xs text-[#94a3b8]">
-            Prototype simulation &mdash; no data was persisted
-          </span>
-        </p>
-        <div className="flex gap-3 mt-2">
-          <Link href="/approvals">
-            <Button variant="primary">Back to Approvals</Button>
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  function handleApprove() {
+  async function handleApprove() {
     setIsProcessing(true);
-    setTimeout(() => {
+    setActionError("");
+
+    try {
+      await approvalService.approve(invoice!.id);
       setIsProcessing(false);
       setDialog("none");
       setDecision("approved");
-    }, 1000);
+    } catch (err: unknown) {
+      setIsProcessing(false);
+      setActionError(
+        err instanceof Error ? err.message : "Failed to approve invoice."
+      );
+    }
   }
 
-  function handleReject() {
-    if (!rejectReason.trim()) {
-      setRejectError("Please provide a reason for rejection.");
+  async function handleReject() {
+    const reasonValidation = validateRejectionReason(rejectReason);
+    if (!reasonValidation.isValid) {
+      setRejectError(reasonValidation.error || "Please provide a valid rejection reason.");
       return;
     }
+
     setRejectError("");
     setIsProcessing(true);
-    setTimeout(() => {
+    setActionError("");
+
+    try {
+      await approvalService.reject(invoice!.id, rejectReason.trim());
       setIsProcessing(false);
       setDialog("none");
       setDecision("rejected");
-    }, 1000);
+    } catch (err: unknown) {
+      setIsProcessing(false);
+      setActionError(
+        err instanceof Error ? err.message : "Failed to reject invoice."
+      );
+    }
   }
 
   return (
@@ -137,9 +167,19 @@ export default function ApprovalReviewPage() {
 
       <PageHeader
         title="Review Invoice"
-        description={`${invoice.supplierName} \u00b7 ${invoice.invoiceNumber}`}
+        description={`${invoice.supplierName} · ${invoice.invoiceNumber}`}
         action={<StatusBadge status={invoice.status} />}
       />
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg bg-[#fee2e2] border border-[#fecaca] px-4 py-3 text-sm text-[#991b1b]"
+        >
+          <AlertCircleIcon size={18} className="shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
 
       <Card>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
@@ -164,7 +204,7 @@ export default function ApprovalReviewPage() {
               Due Date
             </dt>
             <dd className="mt-1 text-sm text-[#0f172a]">
-              {invoice.dueDate ? formatDate(invoice.dueDate) : "\u2014"}
+              {invoice.dueDate ? formatDate(invoice.dueDate) : "—"}
             </dd>
           </div>
           {invoice.description && (
@@ -194,7 +234,7 @@ export default function ApprovalReviewPage() {
         </div>
       )}
 
-      {/* Approve confirmation */}
+      {/* Approve confirmation dialog panel */}
       {dialog === "approve" && (
         <Card className="border-[#bbf7d0]">
           <h3 className="text-sm font-semibold text-[#166534] mb-2">
@@ -227,7 +267,7 @@ export default function ApprovalReviewPage() {
         </Card>
       )}
 
-      {/* Reject dialog */}
+      {/* Reject dialog panel */}
       {dialog === "reject" && (
         <Card className="border-[#fecaca]">
           <h3 className="text-sm font-semibold text-[#991b1b] mb-2">
@@ -235,8 +275,8 @@ export default function ApprovalReviewPage() {
           </h3>
           <p className="text-sm text-[#475569] mb-4">
             Provide a reason for rejecting{" "}
-            <strong>{invoice.invoiceNumber}</strong>. The submitter will see
-            this reason.
+            <strong>{invoice.invoiceNumber}</strong>. The reason will be
+            recorded in the invoice history.
           </p>
           <div className="mb-4">
             <FormField
@@ -253,7 +293,7 @@ export default function ApprovalReviewPage() {
                   if (rejectError) setRejectError("");
                 }}
                 rows={3}
-                placeholder="Explain why this invoice is being rejected&hellip;"
+                placeholder="Explain why this invoice is being rejected…"
                 error={!!rejectError}
               />
             </FormField>

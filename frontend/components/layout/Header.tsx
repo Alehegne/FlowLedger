@@ -2,7 +2,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { UserIcon, LogOutIcon, SettingsIcon, ChevronDownIcon } from "@/components/ui/Icons";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export interface HeaderProps {
   pageTitle?: string;
@@ -19,6 +21,8 @@ export function Header({
   organizationName,
   onMenuToggle,
 }: HeaderProps) {
+  const router = useRouter();
+  const { signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -47,6 +51,12 @@ export function Header({
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [menuOpen]);
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    await signOut();
+    router.push("/sign-in");
+  };
 
   const initials = userName
     .split(" ")
@@ -153,15 +163,15 @@ export function Header({
               </Link>
 
               <div className="border-t border-[#f1f5f9] mt-1 pt-1">
-                <Link
-                  href="/sign-in"
+                <button
+                  type="button"
                   role="menuitem"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={handleSignOut}
                   className="flex items-center gap-2.5 px-3 py-2 text-sm text-[#991b1b] hover:bg-[#fee2e2] transition-colors focus-visible:outline-none focus-visible:bg-[#fee2e2] w-full text-left"
                 >
                   <LogOutIcon size={16} aria-hidden />
                   Sign out
-                </Link>
+                </button>
               </div>
             </div>
           )}
