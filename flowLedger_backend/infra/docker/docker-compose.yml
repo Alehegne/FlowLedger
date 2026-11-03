@@ -1,0 +1,35 @@
+services:
+  # flowledger_backend:
+  #   build: ./src/main/java/com/example/FlowLedger
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://flowledger_postgres:5432/flowledger
+  #     SPRING_DATASOURCE_USERNAME: flowledger
+  #     SPRING_DATASOURCE_PASSWORD: flowledger
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - flowledger_postgres
+  flowledger_postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: flowledger
+      POSTGRES_PASSWORD: flowledger
+      POSTGRES_DB: flowledger
+      FLOWLEDGER_APP_PASSWORD: flowledger
+
+    ports:
+      - "5435:5432"
+    volumes:
+      - flowledger_postgres_data:/var/lib/postgresql/data
+      - ./init-user.sql:/docker-entrypoint-initdb.d/01-init-user.sql:ro
+      - ./init-user.sh:/dockeer-entrypoint-initdb.d/init-user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  flowledger_postgres_data:
+
+# flowledger_app, flowledger(admin)
+# flowledger    , flowledger  ... pass
