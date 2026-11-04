@@ -177,15 +177,15 @@ Immutable append-only audit trail capturing all state transitions and user actio
 ## 3. Flyway Database Migrations
 
 All schema modifications are strictly version-controlled via Flyway scripts located in:  
-[`flowLedger_backend/src/main/resources/db/migration/`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/resources/db/migration/)
+[`flowLedger_backend/src/main/resources/db/migration/`](../flowLedger_backend/src/main/resources/db/migration/)
 
 ### Migration History
 
 | Version | Migration Script | Description |
 |---|---|---|
-| **V1** | [`V1__initial_schema.sql`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/resources/db/migration/V1__initial_schema.sql) | Baseline schema creating `app_user`, `organization`, `organization_membership`, `invoice`, and primary indexes. |
-| **V2** | [`V2__seed_demo_data.sql`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/resources/db/migration/V2__seed_demo_data.sql) | Seeds initial demo tenant *Acme Trading Co.* (`11111111-1111-1111-1111-111111111111`) and demo user `abebe@acme.co` with salted BCrypt password hash. |
-| **V3** | [`V3__enhance_invoice_and_activity_schema.sql`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/resources/db/migration/V3__enhance_invoice_and_activity_schema.sql) | Adds `description` and `rejection_reason` to `invoice`, sets `currency` type to `VARCHAR(3)`, and creates `invoice_activity` table and indexes. |
+| **V1** | [`V1__initial_schema.sql`](../flowLedger_backend/src/main/resources/db/migration/V1__initial_schema.sql) | Baseline schema creating `app_user`, `organization`, `organization_membership`, `invoice`, and primary indexes. |
+| **V2** | [`V2__seed_demo_data.sql`](../flowLedger_backend/src/main/resources/db/migration/V2__seed_demo_data.sql) | Seeds initial demo tenant *Acme Trading Co.* (`11111111-1111-1111-1111-111111111111`) and demo user `abebe@acme.co` with salted BCrypt password hash. |
+| **V3** | [`V3__enhance_invoice_and_activity_schema.sql`](../flowLedger_backend/src/main/resources/db/migration/V3__enhance_invoice_and_activity_schema.sql) | Adds `description` and `rejection_reason` to `invoice`, sets `currency` type to `VARCHAR(3)`, and creates `invoice_activity` table and indexes. |
 
 ---
 

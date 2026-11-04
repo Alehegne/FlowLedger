@@ -106,7 +106,7 @@ sequenceDiagram
 
 ### Defense Against Insecure Direct Object Reference (IDOR)
 - **Zero Trust on Incoming Organization Identifiers:** Endpoints never accept an `organizationId` from the request query string or JSON payload.
-- **Context Injection:** The [`AuthenticatedUserContext`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/AuthenticatedUserContext.java) service extracts the user's `organizationId` directly from the authenticated `Jwt` object in the `SecurityContextHolder`.
+- **Context Injection:** The [`AuthenticatedUserContext`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/AuthenticatedUserContext.java) service extracts the user's `organizationId` directly from the authenticated `Jwt` object in the `SecurityContextHolder`.
 - **Query Scoping:** All database queries require `organizationId` as a mandatory `WHERE` clause constraint:
   ```java
   Optional<Invoice> findByIdAndOrganizationId(UUID id, UUID organizationId);
@@ -144,7 +144,7 @@ flowchart TD
   - `exp`: Expiration timestamp (default: 24 hours)
 
 ### Cookie Security Attributes
-When issued by [`AuthController.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/identity/AuthController.java):
+When issued by [`AuthController.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/identity/AuthController.java):
 - **`HttpOnly`:** `true` (Cannot be read or manipulated by client-side JavaScript, neutralizing Cross-Site Scripting [XSS] token theft).
 - **`SameSite`:** `Lax` (Prevents Cross-Site Request Forgery [CSRF] attacks while allowing normal top-level navigation).
 - **`Path`:** `/` (Accessible across the entire application domain).
@@ -230,7 +230,7 @@ classDiagram
 
 ## 6. Dynamic Query Engine (Criteria API)
 
-To support flexible filtering across statuses, suppliers, invoice numbers, and date ranges without falling victim to PostgreSQL type-inference defects (such as `lower(bytea)` when binding nullable parameters in raw JPQL), FlowLedger utilizes the **JPA Criteria API Specification Pattern** in [`InvoiceSpecifications.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java):
+To support flexible filtering across statuses, suppliers, invoice numbers, and date ranges without falling victim to PostgreSQL type-inference defects (such as `lower(bytea)` when binding nullable parameters in raw JPQL), FlowLedger utilizes the **JPA Criteria API Specification Pattern** in [`InvoiceSpecifications.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java):
 
 ```java
 public static Specification<Invoice> withFilters(
@@ -278,7 +278,7 @@ public static Specification<Invoice> withFilters(
 ## 7. Cross-Cutting Technical Concerns
 
 ### 7.1 Unified Error Representation (RFC 7807)
-All error responses from the backend adhere to a standardized JSON schema handled by [`GlobalExceptionHandler.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/GlobalExceptionHandler.java):
+All error responses from the backend adhere to a standardized JSON schema handled by [`GlobalExceptionHandler.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/GlobalExceptionHandler.java):
 
 ```json
 {

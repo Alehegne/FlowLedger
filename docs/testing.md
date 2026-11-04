@@ -28,7 +28,7 @@ flowchart TD
 ### 2.1 Ephemeral PostgreSQL via Testcontainers
 Backend integration tests do not rely on fragile external databases or H2 in-memory emulators (which fail to replicate PostgreSQL-specific dialect constraints, schemas, and extensions).
 
-All integration tests extend [`PostgresIntegrationTestBase`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/test/java/com/example/flowLedger_backend/PostgresIntegrationTestBase.java):
+All integration tests extend [`PostgresIntegrationTestBase`](../flowLedger_backend/src/test/java/com/example/flowLedger_backend/PostgresIntegrationTestBase.java):
 
 ```java
 @ActiveProfiles("test")
@@ -64,7 +64,7 @@ public abstract class PostgresIntegrationTestBase {
 The frontend testing suite runs under **Vitest 5.0.5** with full TypeScript support, executing 55 tests in under 300 ms.
 
 ### 3.2 Key Frontend Testing Features
-- **Contract Verification:** Mocks the underlying `api.get` / `api.post` / `api.put` methods in [`lib/api/client.ts`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/frontend/lib/api/client.ts) to verify that `ApiInvoiceService` and `ApiApprovalService` pass query parameters, paths, and payloads matching the backend contract.
+- **Contract Verification:** Mocks the underlying `api.get` / `api.post` / `api.put` methods in [`frontend/lib/api/client.ts`](../frontend/lib/api/client.ts) to verify that `ApiInvoiceService` and `ApiApprovalService` pass query parameters, paths, and payloads matching the backend contract.
 - **Comprehensive Validation Checks:** 17 tests validating invoice numbers, positive monetary amounts, date bounds (e.g. Due Date not earlier than Issue Date), and mandatory rejection reason lengths.
 - **State Store Reactions:** Tests reactive updates to `useSyncExternalStore` when invoices are drafted, submitted, approved, or rejected.
 

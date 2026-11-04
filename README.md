@@ -64,10 +64,10 @@ flowchart TD
 ```
 
 ### Key Architectural Tenets
-1. **Strict Multi-Tenant Isolation:** Every invoice query and mutation derives tenant identity (`organizationId`) directly from the verified JWT claims via [`AuthenticatedUserContext`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/AuthenticatedUserContext.java). Client-supplied organization IDs are never trusted.
+1. **Strict Multi-Tenant Isolation:** Every invoice query and mutation derives tenant identity (`organizationId`) directly from the verified JWT claims via [`AuthenticatedUserContext`](flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/AuthenticatedUserContext.java). Client-supplied organization IDs are never trusted.
 2. **Dual-Delivery JWT Authentication:** Supports `HttpOnly; SameSite=Lax` browser cookies for seamless Next.js session management, while simultaneously accepting `Authorization: Bearer <token>` headers for automated API clients.
 3. **Immutable Audit Trail:** All invoice transitions (`CREATED_DRAFT`, `SUBMITTED`, `EDITED`, `APPROVED`, `REJECTED`) append timestamped events to `invoice_activity` recording actor identity and decision rationale.
-4. **Resilient Querying:** Dynamic JPA Criteria queries via [`InvoiceSpecifications`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java) safeguard PostgreSQL against untyped parameter binding errors while optimizing index usage.
+4. **Resilient Querying:** Dynamic JPA Criteria queries via [`InvoiceSpecifications`](flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java) safeguard PostgreSQL against untyped parameter binding errors while optimizing index usage.
 
 ---
 
@@ -230,14 +230,14 @@ npx tsc --noEmit
 
 | Document | Purpose |
 |---|---|
-| [**Software Requirements Specification (SRS)**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/srs.md) | Business requirements, user personas, functional specifications, and non-functional constraints. |
-| [**Architecture & Design**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/architecture.md) | Detailed architectural diagrams, multi-tenant isolation model, and state transition engines. |
-| [**Data Models & Database Schema**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/data-models.md) | ER diagrams, table schemas, data dictionary, indexing, and Flyway migration conventions. |
-| [**API Specification**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/api-contract.md) | Full human-readable endpoint catalog with request/response schemas, error codes, and headers. |
-| [**OpenAPI 3.1.0 Specification**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/openapi.yaml) | Standardized, machine-readable OpenAPI document for Swagger UI, Postman, and client SDKs. |
-| [**Security Architecture**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/security.md) | STRIDE threat model, JWT mechanics, cookie security, CSRF/CORS defenses, and audit compliance. |
-| [**Testing Strategy**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/testing.md) | Testing pyramid, Testcontainers execution, Vitest mock strategies, and CI/CD quality gates. |
-| [**Deployment & Operations**](file:///home/alexoo/notes/backend/java_backend/FlowLedger/docs/deployment-operations.md) | Production Dockerfiles, container composition, environment variables, monitoring, and runbooks. |
+| [**Software Requirements Specification (SRS)**](docs/srs.md) | Business requirements, user personas, functional specifications, and non-functional constraints. |
+| [**Architecture & Design**](docs/architecture.md) | Detailed architectural diagrams, multi-tenant isolation model, and state transition engines. |
+| [**Data Models & Database Schema**](docs/data-models.md) | ER diagrams, table schemas, data dictionary, indexing, and Flyway migration conventions. |
+| [**API Specification**](docs/api-contract.md) | Full human-readable endpoint catalog with request/response schemas, error codes, and headers. |
+| [**OpenAPI 3.1.0 Specification**](docs/openapi.yaml) | Standardized, machine-readable OpenAPI document for Swagger UI, Postman, and client SDKs. |
+| [**Security Architecture**](docs/security.md) | STRIDE threat model, JWT mechanics, cookie security, CSRF/CORS defenses, and audit compliance. |
+| [**Testing Strategy**](docs/testing.md) | Testing pyramid, Testcontainers execution, Vitest mock strategies, and CI/CD quality gates. |
+| [**Deployment & Operations**](docs/deployment-operations.md) | Production Dockerfiles, container composition, environment variables, monitoring, and runbooks. |
 
 ---
 

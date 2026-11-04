@@ -64,7 +64,7 @@ To balance the security of browser-based single-page applications with the flexi
 1. **Web Browser Clients:** Tokens are delivered in an `HttpOnly` cookie (`access_token`). The browser automatically includes the cookie in same-origin requests without requiring JavaScript exposure.
 2. **API & Automated Clients:** Tokens are included in the JSON login response (`accessToken`) and can be supplied via standard `Authorization: Bearer <token>` headers.
 
-The [`CookieBearerTokenResolver`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/CookieBearerTokenResolver.java) checks the `Authorization` header first; if absent, it checks the `access_token` cookie.
+The [`CookieBearerTokenResolver`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/security/CookieBearerTokenResolver.java) checks the `Authorization` header first; if absent, it checks the `access_token` cookie.
 
 ### 3.2 Cookie Security Configuration
 When written to the HTTP response header:
@@ -130,7 +130,7 @@ Controllers and services enforce role checks:
 ## 5. Web Application Protections
 
 ### 5.1 Cross-Origin Resource Sharing (CORS)
-Configured in [`SecurityConfig.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/SecurityConfig.java):
+Configured in [`SecurityConfig.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/SecurityConfig.java):
 ```java
 CorsConfiguration config = new CorsConfiguration();
 config.setAllowedOrigins(List.of("http://localhost:3000"));
@@ -142,10 +142,10 @@ Unregistered origins are blocked at the filter level before reaching application
 
 ### 5.2 SQL Injection Defenses
 - All entity operations utilize Spring Data JPA repositories.
-- Complex queries use the **JPA Criteria API** ([`InvoiceSpecifications.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java)), ensuring dynamic predicates are compiled via strongly typed CriteriaBuilder objects and bound through parameterized JDBC statements.
+- Complex queries use the **JPA Criteria API** ([`InvoiceSpecifications.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/invoices/InvoiceSpecifications.java)), ensuring dynamic predicates are compiled via strongly typed CriteriaBuilder objects and bound through parameterized JDBC statements.
 
 ### 5.3 Safe Error Responses
-Uncaught exceptions are processed by [`GlobalExceptionHandler.java`](file:///home/alexoo/notes/backend/java_backend/FlowLedger/flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/GlobalExceptionHandler.java), preventing leakage of:
+Uncaught exceptions are processed by [`GlobalExceptionHandler.java`](../flowLedger_backend/src/main/java/com/example/flowLedger_backend/config/GlobalExceptionHandler.java), preventing leakage of:
 - Database column or table names
 - SQL syntax error details
 - Java stack traces or internal framework class names
